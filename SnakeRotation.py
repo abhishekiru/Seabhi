@@ -1,5 +1,16 @@
 import time
-from playsound import playsound
+import sys
+import select
+import glob
+import os
+#from playsound import playsound
+
+class Person:
+    """Keeps track of a person's lifetime stats"""
+    name = ""
+    ripcount = 0
+    seshcount = 0
+    ripsThisSesh = 0
 
 def initialize():
     print("\nLighting up the Snake Rotation...\n")
@@ -13,26 +24,48 @@ def initialize():
             groupSize = input("Invalid input! Enter # of people in group: ")
 
     group = {}
-
+    
+    os.chdir("/mydir")
+    
     for i in range(groupSize):
-        name = input("Please enter name " + str(i+1) + ": ")
+        prof = Person()
+        print("User profiles: \n")
+        profiles = glob.glob("*.thc")
+        i = 0
+        for file in profiles:
+            print(str(i) + ": " + file.rstrip(".thc") + "\n")
+        name = input("Enter a name to create a profile, or enter a number to load a profile from above: \n")
         while not isinstance(name, str):
             try:
                 name = str(name)
             except ValueError:
                 name = input("Invalid input! Enter name " + str(i+1) + ": ")
-        print("You entered: '" + name + "'")
-        group[name] = 0
+        if (int(name) < len(profiles)) and (int(name) >= 0): #check to see if user is selecting a profile
+            #load profile info into person class
+            userProfile = open(profiles[int(name)], "r")
+            userData = userProfile.readlines()
+            print("You selected profile: ")
+            prof.name = userData[0][6:].rstrip() #data
+            prof.ripcount = userData[1][15:].rstrip()#data
+            prof.seshcount = userData[2][12:].rstrip() #data
+        else:
+            print("You entered: '" + name + "'! Creating profile...")
+            prof.name = name
+            newProfile = open(name+".thc", "w+")
+            newProfile.write("Name: %s\r\n", name)
+            newProfile.write("Lifetime Rips: 0\r\n")
+            newProfile.write("Sesh count: 0\r\n")
+        group[name] = prof
 
     return group
 
 def session(peopleMap, person):
 
-    print("It's " + person + "'s turn")
+    print("It's " + person.name + "'s turn")
 
     countdown(10)
 
-    prompt = "'q' to quit. 'p' for progress.\n"
+    prompt = "'q' to quit. 'p' for progress. 's' for lifetime stats\n"
     validInput = False
 
     while not validInput:
@@ -43,13 +76,19 @@ def session(peopleMap, person):
         elif state == 'p':
             print("\nCurrent Progress: ")
             print(peopleMap)
+        elif state == 's':
+            print("Stats: \n")
+            print("Rips this sesh: %s", )
+            print("Total Rips: %s\n", person.ripcount)
+            print("Sesh count: %s\n", person.seshcount)
         else:
             validInput = True
 
 
-    incrementedCount = peopleMap.get(person, 0) + 1
-    print(person + " has taken " + str(incrementedCount) + " hit(s)")
-    peopleMap[person] = incrementedCount
+    incrementedCount = person.ripsThisSesh + 1
+    print(person.name + " has taken " + str(incrementedCount) + " hit(s)")
+    person.ripsThisSesh = incrementedCount
+    person.ripcount = person.ripcount + 1
 
     return False
 
@@ -81,6 +120,8 @@ if __name__ == '__main__':
             sessionOver = session(peopleMap, person)
             if sessionOver:
                 break
+
+    #update user profiles with new stats
 
     print("Session result: ")
     print(peopleMap)
