@@ -25,43 +25,47 @@ def initialize():
 
     group = {}
     
-    os.chdir("/mydir")
+    i = 0
     
     for i in range(groupSize):
         prof = Person()
         print("User profiles: \n")
         profiles = glob.glob("*.thc")
-        i = 0
         for file in profiles:
-            print(str(i) + ": " + file.rstrip(".thc") + "\n")
-        name = input("Enter a name to create a profile, or enter a number to load a profile from above: \n")
+            print(file.rstrip(".thc") + "\n")
+        name = input("Enter a name to create a profile or load from the profiles above\n")
         while not isinstance(name, str):
             try:
                 name = str(name)
             except ValueError:
                 name = input("Invalid input! Enter name " + str(i+1) + ": ")
-        if (int(name) < len(profiles)) and (int(name) >= 0): #check to see if user is selecting a profile
+        if ((name + ".thc") in profiles): #check to see if user is selecting a profile
             #load profile info into person class
-            userProfile = open(profiles[int(name)], "r")
+            userProfile = open(name+".thc", "r")
             userData = userProfile.readlines()
-            print("You selected profile: ")
             prof.name = userData[0][6:].rstrip() #data
-            prof.ripcount = userData[1][15:].rstrip()#data
-            prof.seshcount = userData[2][12:].rstrip() #data
+            prof.ripcount = int(userData[1][15:].rstrip())#data
+            prof.seshcount = int(userData[2][12:].rstrip()) #data
+            print("You selected profile: " + prof.name + "\n")
+            userProfile.close()
         else:
             print("You entered: '" + name + "'! Creating profile...")
             prof.name = name
             newProfile = open(name+".thc", "w+")
-            newProfile.write("Name: %s\r\n", name)
+            newProfile.write("Name: " + name + "\r\n")
             newProfile.write("Lifetime Rips: 0\r\n")
             newProfile.write("Sesh count: 0\r\n")
         group[name] = prof
 
     return group
 
+def printRipStatus(peopleMap):
+    for person in peopleMap:
+        print(person + " has taken " + str(peopleMap[person].ripsThisSesh) + " rips\n")
+
 def session(peopleMap, person):
 
-    print("It's " + person.name + "'s turn")
+    print("It's " + person + "'s turn")
 
     countdown(10)
 
@@ -75,20 +79,20 @@ def session(peopleMap, person):
             return True
         elif state == 'p':
             print("\nCurrent Progress: ")
-            print(peopleMap)
+            printRipStatus(peopleMap)
         elif state == 's':
-            print("Stats: \n")
-            print("Rips this sesh: %s", )
-            print("Total Rips: %s\n", person.ripcount)
-            print("Sesh count: %s\n", person.seshcount)
+            print(person + "'s Stats: \n")
+            print("Rips this sesh: " + str(peopleMap[person].ripsThisSesh) + "\n")
+            print("Total Rips: " + str(peopleMap[person].ripcount) + "\n")
+            print("Sesh count: " + str(peopleMap[person].seshcount) + "\n")
         else:
             validInput = True
 
 
-    incrementedCount = person.ripsThisSesh + 1
-    print(person.name + " has taken " + str(incrementedCount) + " hit(s)")
-    person.ripsThisSesh = incrementedCount
-    person.ripcount = person.ripcount + 1
+    incrementedCount = peopleMap[person].ripsThisSesh + 1
+    print(person + " has taken " + str(incrementedCount) + " hit(s)")
+    peopleMap[person].ripsThisSesh = incrementedCount
+    peopleMap[person].ripcount = peopleMap[person].ripcount + 1
 
     return False
 
@@ -122,7 +126,13 @@ if __name__ == '__main__':
                 break
 
     #update user profiles with new stats
+    for person in peopleMap:
+        userProfile = open(peopleMap[person].name + ".thc", "+w")
+        userProfile.write("Name: " + peopleMap[person].name + "\r\n")
+        userProfile.write("Lifetime Rips: " + str(peopleMap[person].ripcount) + "\r\n")
+        userProfile.write("Sesh count: " + str(peopleMap[person].seshcount+1) + "\r\n")
+        userProfile.close()
 
     print("Session result: ")
-    print(peopleMap)
+    printRipStatus(peopleMap)
     print("See you soon!")
